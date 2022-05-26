@@ -1,32 +1,32 @@
-
-import numpy as np
-import pandas as pd
 from flask import Flask, request, render_template
-from sklearn import preprocessing
+import fasttext
 import pickle
 
 app = Flask(__name__)
-# model = pickle.load(open('model.pkl', 'rb'))
+clf = pickle.load(open('rf_50_65_50.sav', 'rb'))
 
 @app.route('/')
 def home():
     return render_template('index.html')
 
+
 @app.route('/predict',methods=['POST'])
 def predict():
     feature_list = request.form.to_dict()
     feature_list = list(feature_list.values())
-    feature_list = list(map(int, feature_list))
-    final_features = np.array(feature_list).reshape(1, 12) 
-    
-    # prediction = model.predict(final_features)
-    # output = int(prediction[0])
-    # if output == 1:
-    #     text = ">50K"
-    # else:
-    #     text = "<=50K"
+    print(feature_list)
+    model = fasttext.load_model(
+        "./ubertext.fiction_news_wikipedia.filter_rus+short.tokens.txt.algo-cbow.epochs-15.subwords-2..5.neg_sampling-15.bin")
+    vectors = model.get_sentence_vector(feature_list[0])
 
-    return render_template('./index.html', prediction_text='Employee Income is {}'.format("Hello"))
+    prediction = clf.predict(vectors.reshape(1, -1))
+    output = int(prediction[0])
+    if output == 1:
+        text = "propaganda"
+    else:
+        text = "not propaganda"
+
+    return render_template('index.html', prediction_text='The news is {}'.format(text))
 
 
 if __name__ == "__main__":
